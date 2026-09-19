@@ -756,6 +756,25 @@
     transition:all 0.15s ease-out;
   }
   .lang-toggle:hover{border-color:var(--accent);color:var(--accent);}
+  .topbar-actions{
+    flex:0 0 auto;
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .exit-btn{
+    flex:0 0 auto;
+    padding:8px 14px;
+    border-radius:999px;
+    border:1.5px solid var(--hair);
+    background:transparent;
+    color:var(--sub);
+    font-size:14px;
+    font-weight:600;
+    cursor:pointer;
+    transition:all 0.15s ease-out;
+  }
+  .exit-btn:hover{border-color:#e0554f;color:#e0554f;}
 
   @media (prefers-reduced-motion: reduce){
     .char-result, .q-card, .feedback-banner, .explain-panel, .next-row{
@@ -769,7 +788,7 @@
     .start-card,.q-card,.result-card{padding:22px 18px;}
     .q-stem{font-size:18px;}
     .passage-box{font-size:17px;padding:16px;}
-    .lang-toggle{font-size:13px;padding:7px 12px;}
+    .lang-toggle,.exit-btn{font-size:13px;padding:7px 12px;}
     .bar-chart{gap:16px;overflow-x:auto;justify-content:flex-start;padding-left:4px;padding-right:4px;}
     .bar-set{gap:4px;}
     .bar{width:22px;}
@@ -868,6 +887,8 @@ const UI = {
     resetStatsBtn: '기록 초기화',
     resetStatsConfirm: '학습 기록을 정말 초기화할까요? 이 브라우저에 저장된 통계가 모두 사라집니다.',
     backToStartBtn: '처음으로',
+    exitQuizBtn: '그만하기',
+    exitQuizConfirm: '여기서 그만하시겠어요? 지금까지 푼 문제의 학습 기록은 저장돼요.',
   },
   ja: {
     brand: 'TOPIK 読解練習',
@@ -925,6 +946,8 @@ const UI = {
     resetStatsBtn: '記録をリセット',
     resetStatsConfirm: '学習記録を本当にリセットしますか？このブラウザに保存された統計がすべて消えます。',
     backToStartBtn: '最初から',
+    exitQuizBtn: '中断する',
+    exitQuizConfirm: 'ここで中断しますか？ここまで解いた問題の学習記録は保存されます。',
   },
 };
 function t(key, ...args){
@@ -948,6 +971,24 @@ function toggleLang(){
 }
 function langToggleHtml(){
   return `<button class="lang-toggle" id="lang-toggle-btn">${state.lang==='ko' ? t('toggleToJa') : t('toggleToKo')}</button>`;
+}
+
+function exitQuiz(){
+  if(confirm(t('exitQuizConfirm'))){
+    state.screen = 'start';
+    render();
+  }
+}
+
+function topbarActionsHtml(showExit){
+  const exitBtn = showExit ? `<button class="exit-btn" id="exit-quiz-btn">${t('exitQuizBtn')}</button>` : '';
+  return `<div class="topbar-actions">${exitBtn}${langToggleHtml()}</div>`;
+}
+
+function attachTopbarActions(wrap){
+  wrap.querySelector('#lang-toggle-btn').addEventListener('click', toggleLang);
+  const exitBtn = wrap.querySelector('#exit-quiz-btn');
+  if(exitBtn) exitBtn.addEventListener('click', exitQuiz);
 }
 
 function shuffle(arr){
@@ -1164,7 +1205,7 @@ function resetStats(){
   try{ localStorage.removeItem(STATS_KEY); }catch(e){}
 }
 
-function topbarHtml(progressInnerHtml){
+function topbarHtml(progressInnerHtml, showExit){
   const wrap = el(`
     <header class="topbar">
       <div class="topbar-row">
@@ -1173,8 +1214,8 @@ function topbarHtml(progressInnerHtml){
       ${progressInnerHtml || ''}
     </header>
   `);
-  wrap.querySelector('.topbar-row').appendChild(el(langToggleHtml()));
-  wrap.querySelector('#lang-toggle-btn').addEventListener('click', toggleLang);
+  wrap.querySelector('.topbar-row').appendChild(el(topbarActionsHtml(showExit)));
+  attachTopbarActions(wrap);
   return wrap;
 }
 
@@ -1193,7 +1234,7 @@ function renderWritingQuiz(){
       <div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div>
       <div class="progress-label">${t('writingProgressLabel', state.writingIdx+1, total)}</div>
     </div>
-  `));
+  `, true));
 
   const card = el(`<div class="q-card"></div>`);
   card.appendChild(el(`
@@ -1502,8 +1543,8 @@ function renderQuiz(){
       <div class="score-label">${t('scoreLabel', state.score, state.answers.length)}</div>
     </header>
   `));
-  wrap.querySelector('.topbar-row').appendChild(el(langToggleHtml()));
-  wrap.querySelector('#lang-toggle-btn').addEventListener('click', toggleLang);
+  wrap.querySelector('.topbar-row').appendChild(el(topbarActionsHtml(true)));
+  attachTopbarActions(wrap);
 
   const card = el(`<div class="q-card"></div>`);
   const first = group[0];
